@@ -52,3 +52,35 @@ export const transactions = mysqlTable("transactions", {
 
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = typeof transactions.$inferInsert;
+// Notifications table for tracking user alerts
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  animalType: varchar("animalType", { length: 50 }).notNull(),
+  notificationType: mysqlEnum("notificationType", ["critical", "warning", "info"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  daysRemaining: int("daysRemaining"),
+  isRead: int("isRead").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  readAt: timestamp("readAt"),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+// Alert thresholds for each user
+export const alertThresholds = mysqlTable("alertThresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  animalType: varchar("animalType", { length: 50 }).notNull(),
+  criticalDays: int("criticalDays").default(3).notNull(),
+  warningDays: int("warningDays").default(7).notNull(),
+  notifyEmail: int("notifyEmail").default(1).notNull(),
+  notifyInApp: int("notifyInApp").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AlertThreshold = typeof alertThresholds.$inferSelect;
+export type InsertAlertThreshold = typeof alertThresholds.$inferInsert;

@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
+import { NotificationBell } from "@/components/NotificationBell";
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -432,9 +433,12 @@ export default function FodderFlowDashboard() {
     undefined,
     { enabled: isAuthenticated }
   );
+  const { data: alertThresholds } = trpc.alertThresholds.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
   const updateInventoryMutation = trpc.inventory.update.useMutation();
 
-  // Load inventory from database when it arrives
+  // Load inventory from database and check for critical alerts
   useEffect(() => {
     if (inventory && isAuthenticated) {
       const newState: DashboardState = { ...animals };
@@ -449,8 +453,43 @@ export default function FodderFlowDashboard() {
         }
       });
       setAnimals(newState);
+
+      // Check for critical alerts
+      checkForCriticalAlerts(newState, inventory);
     }
-  }, [inventory, isAuthenticated]);
+  }, [inventory, isAuthenticated, alertThresholds]);
+
+  // Check for critical feed levels and create notifications
+  const checkForCriticalAlerts = (
+    state: DashboardState,
+    inventoryData: typeof inventory
+  ) => {
+    if (!inventoryData) return;
+
+    inventoryData.forEach((item) => {
+      const animal = state[item.animalType as keyof DashboardState];
+      if (!animal) return;
+
+      const daysLeft = calculateDaysLeft(item.currentStock, item.animalCount, animal.dailyIntake);
+      const threshold = alertThresholds?.find((t) => t.animalType === item.animalType);
+      const criticalDays = threshold?.criticalDays || 3;
+      const warningDays = threshold?.warningDays || 7;
+
+      if (daysLeft < criticalDays) {
+        // Show toast for critical alert
+        toast.error(
+          `🚨 CRITICAL: ${animal.name} feed will run out in ${daysLeft} days!`,
+          { duration: 5000 }
+        );
+      } else if (daysLeft < warningDays) {
+        // Show toast for warning
+        toast.warning(
+          `⚠️ WARNING: ${animal.name} feed will run out in ${daysLeft} days`,
+          { duration: 4000 }
+        );
+      }
+    });
+  };
 
   // Calculate metrics
   const totalLivestock = useMemo(
@@ -550,13 +589,16 @@ export default function FodderFlowDashboard() {
             <p className="text-sm text-gray-600">Agricultural Feed Management Dashboard</p>
             {isAuthenticated && user && <p className="text-xs text-gray-500 mt-1">Welcome, {user.name}</p>}
           </div>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Update Store
-          </Button>
+          <div className="flex items-center gap-3">
+            {isAuthenticated && <NotificationBell />}
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Update Store
+            </Button>
+          </div>
         </div>
       </motion.header>
 

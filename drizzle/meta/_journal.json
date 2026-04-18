@@ -15,6 +15,13 @@
       "when": 1776541103312,
       "tag": "0001_condemned_joshua_kane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776542332646,
+      "tag": "0002_noisy_hitman",
+      "breakpoints": true
     }
   ]
 }

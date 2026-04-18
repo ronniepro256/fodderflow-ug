@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, inventory, InsertInventory, transactions, InsertTransaction } from "../drizzle/schema";
+import { InsertUser, users, inventory, InsertInventory, transactions, InsertTransaction, notifications, InsertNotification, alertThresholds, InsertAlertThreshold } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -159,6 +159,197 @@ export async function addTransaction(userId: number, data: Omit<InsertTransactio
     return true;
   } catch (error) {
     console.error("[Database] Failed to add transaction:", error);
+    return null;
+  }
+}
+
+
+// Notification queries
+export async function getNotificationsByUserId(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get notifications: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get notifications:", error);
+    return [];
+  }
+}
+
+export async function getUnreadNotificationCount(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get unread count: database not available");
+    return 0;
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, 0)));
+    return result.length;
+  } catch (error) {
+    console.error("[Database] Failed to get unread count:", error);
+    return 0;
+  }
+}
+
+export async function createNotification(userId: number, data: Omit<InsertNotification, "userId">) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create notification: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.insert(notifications).values({
+      ...data,
+      userId,
+    });
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to create notification:", error);
+    return null;
+  }
+}
+
+export async function markNotificationAsRead(notificationId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot mark notification as read: database not available");
+    return null;
+  }
+
+  try {
+    await db
+      .update(notifications)
+      .set({
+        isRead: 1,
+        readAt: new Date(),
+      })
+      .where(eq(notifications.id, notificationId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to mark notification as read:", error);
+    return null;
+  }
+}
+
+export async function markAllNotificationsAsRead(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot mark all notifications as read: database not available");
+    return null;
+  }
+
+  try {
+    await db
+      .update(notifications)
+      .set({
+        isRead: 1,
+        readAt: new Date(),
+      })
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, 0)));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to mark all notifications as read:", error);
+    return null;
+  }
+}
+
+export async function deleteNotification(notificationId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot delete notification: database not available");
+    return null;
+  }
+
+  try {
+    await db.delete(notifications).where(eq(notifications.id, notificationId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete notification:", error);
+    return null;
+  }
+}
+
+// Alert threshold queries
+export async function getAlertThresholdsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get alert thresholds: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(alertThresholds)
+      .where(eq(alertThresholds.userId, userId));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get alert thresholds:", error);
+    return [];
+  }
+}
+
+export async function getAlertThreshold(userId: number, animalType: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get alert threshold: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(alertThresholds)
+      .where(and(eq(alertThresholds.userId, userId), eq(alertThresholds.animalType, animalType)))
+      .limit(1);
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to get alert threshold:", error);
+    return null;
+  }
+}
+
+export async function upsertAlertThreshold(userId: number, animalType: string, data: Omit<InsertAlertThreshold, "userId" | "animalType">) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot upsert alert threshold: database not available");
+    return null;
+  }
+
+  try {
+    const existing = await getAlertThreshold(userId, animalType);
+
+    if (existing) {
+      await db
+        .update(alertThresholds)
+        .set(data)
+        .where(and(eq(alertThresholds.userId, userId), eq(alertThresholds.animalType, animalType)));
+    } else {
+      await db.insert(alertThresholds).values({
+        userId,
+        animalType,
+        ...data,
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to upsert alert threshold:", error);
     return null;
   }
 }
