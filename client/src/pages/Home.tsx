@@ -20,6 +20,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RealWeatherCard } from "@/components/RealWeatherCard";
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -86,7 +87,6 @@ const INITIAL_STATE: DashboardState = {
   },
 };
 
-const WEATHER_FORECASTS = ["Rain", "Dry", "Sunny"];
 const COST_PER_KG = 2500; // UGX per kg
 
 // ============================================================================
@@ -354,70 +354,6 @@ const UpdateStoreForm = ({ isOpen, onClose, onSubmit, animals, isLoading }: Upda
 };
 
 // ============================================================================
-// WEATHER CARD COMPONENT
-// ============================================================================
-
-interface WeatherCardProps {
-  forecast: string;
-}
-
-const WeatherCard = ({ forecast }: WeatherCardProps) => {
-  const isRain = forecast === "Rain";
-  const isDry = forecast === "Dry";
-
-  const advice = isRain
-    ? "Tip: Ensure silage and bran are covered to avoid spoilage."
-    : isDry
-      ? "Tip: Pasture growth is slow. Increase supplement stock by 15%."
-      : "Tip: Ideal conditions for pasture growth. Monitor water availability.";
-
-  return (
-    <motion.div
-      className="rounded-2xl border border-gray-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-6 shadow-sm"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Local Weather</h3>
-        {isRain ? (
-          <CloudRain className="w-8 h-8 text-blue-500" />
-        ) : isDry ? (
-          <Sun className="w-8 h-8 text-yellow-500" />
-        ) : (
-          <Cloud className="w-8 h-8 text-gray-400" />
-        )}
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <p className="text-sm text-gray-600">Forecast</p>
-          <p className="text-xl font-bold text-gray-800">{forecast}</p>
-        </div>
-
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-sm text-gray-700">{advice}</p>
-        </div>
-
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Rain Probability</p>
-          <motion.div
-            className="mt-2 h-2 bg-gradient-to-r from-blue-200 to-blue-400 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: isRain ? "85%" : isDry ? "15%" : "45%" }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            style={{ marginLeft: "auto", marginRight: "auto" }}
-          />
-          <p className="text-sm font-semibold text-gray-700 mt-1">
-            {isRain ? "85%" : isDry ? "15%" : "45%"}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// ============================================================================
 // MAIN DASHBOARD COMPONENT
 // ============================================================================
 
@@ -425,7 +361,6 @@ export default function FodderFlowDashboard() {
   const { user, isAuthenticated } = useAuth();
   const [animals, setAnimals] = useState<DashboardState>(INITIAL_STATE);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedForecast, setSelectedForecast] = useState("Rain");
   const [activeTab, setActiveTab] = useState("cows");
 
   // tRPC queries and mutations
@@ -724,33 +659,7 @@ export default function FodderFlowDashboard() {
 
           {/* Weather & Forecast Section */}
           <div className="space-y-4">
-            <WeatherCard forecast={selectedForecast} />
-
-            <motion.div
-              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Simulate Forecast
-              </label>
-              <div className="space-y-2">
-                {WEATHER_FORECASTS.map((forecast) => (
-                  <button
-                    key={forecast}
-                    onClick={() => setSelectedForecast(forecast)}
-                    className={`w-full px-4 py-2 rounded-lg font-medium transition-all ${
-                      selectedForecast === forecast
-                        ? "bg-green-600 text-white shadow-md"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    {forecast}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+            <RealWeatherCard />
           </div>
         </motion.div>
 
