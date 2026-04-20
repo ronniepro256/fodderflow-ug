@@ -129,7 +129,8 @@ const AnimatedRadialChart = ({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+      <div className="relative inline-flex items-center justify-center">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
         <defs>
           <linearGradient id="baseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#e5e7eb" stopOpacity="0.8" />
@@ -167,16 +168,17 @@ const AnimatedRadialChart = ({
           style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }}
         />
       </svg>
-
-      <motion.div
-        className="text-center"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-      >
-        <div className="text-3xl font-bold text-gray-800">{Math.round(value)}%</div>
-        <div className="text-sm text-gray-600 mt-1">{daysLeft} days left</div>
-      </motion.div>
+        
+        <motion.div
+          className="absolute text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <div className="text-4xl font-bold text-gray-800">{Math.round(value)}%</div>
+          <div className="text-xs text-gray-600 mt-0.5">{daysLeft} days</div>
+        </motion.div>
+      </div>
 
       <motion.div
         className={`px-3 py-1 rounded-full text-sm font-semibold ${status.bg} ${status.color}`}
@@ -572,7 +574,7 @@ export default function FodderFlowDashboard() {
           />
           <BentoCard
             title="Est. Monthly Cost"
-            value={`₦${(estimatedMonthlyCost / 1000).toFixed(0)}K`}
+            value={formatCurrency(estimatedMonthlyCost)}
             icon={<Package className="w-6 h-6 text-purple-600" />}
             color="bg-purple-100"
           />
@@ -700,3 +702,13 @@ export default function FodderFlowDashboard() {
     </div>
   );
 }
+
+const formatCurrency = (amount: number): string => {
+  if (amount >= 1_000_000) {
+    return `UGX ${(amount / 1_000_000).toFixed(2)}M`;
+  }
+  if (amount >= 1_000) {
+    return `UGX ${(amount / 1_000).toFixed(0)}K`;
+  }
+  return `UGX ${amount.toFixed(0)}`;
+};

@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -31,6 +32,7 @@ function App() {
         // switchable
       >
         <TooltipProvider>
+          <PWAInstallPrompt />
           <Toaster />
           <Router />
         </TooltipProvider>
